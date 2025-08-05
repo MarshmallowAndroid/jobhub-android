@@ -46,12 +46,11 @@ public class EmpMessagesFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
         currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         messageRepository = MessageRepository.getInstance();
 
         setupViews();
-        setupTestButton();
+//        setupTestButton();
         loadConversations();
     }
 

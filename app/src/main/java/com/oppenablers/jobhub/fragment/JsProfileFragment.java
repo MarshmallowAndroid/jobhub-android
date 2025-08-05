@@ -1,12 +1,19 @@
 package com.oppenablers.jobhub.fragment;
 
+import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.PickVisualMediaRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -18,9 +25,18 @@ import com.oppenablers.jobhub.api.JobHubClient;
 import com.oppenablers.jobhub.databinding.FragmentJsProfileBinding;
 import com.oppenablers.jobhub.model.JobSeeker;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+
 public class JsProfileFragment extends Fragment {
 
     FragmentJsProfileBinding binding;
+    ActivityResultLauncher<PickVisualMediaRequest> pickMedia;
 
     public JsProfileFragment() {
         // Required empty public constructor
@@ -31,6 +47,42 @@ public class JsProfileFragment extends Fragment {
                              Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         binding = FragmentJsProfileBinding.inflate(inflater, container, false);
+
+        pickMedia = registerForActivityResult(new ActivityResultContracts.PickVisualMedia(), o -> {
+            if (o != null) {
+                Context context = getContext();
+                if (context == null) return;
+
+                ContentResolver contentResolver = context.getContentResolver();
+                try (InputStream is = contentResolver.openInputStream(o)) {
+                    if (is == null) return;
+
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+                    byte[] buffer = new byte[1024];
+                    while (true) {
+                        int read = is.read(buffer);
+                        if (read < 0) break;
+                        baos.write(buffer);
+                    }
+
+                    JobHubClient.changeProfilePicture(baos.toByteArray(), new JobHubClient.JobHubCallbackVoid() {
+                        @Override
+                        public void onFailure() {
+                            Log.d("profpic", "failed");
+                        }
+
+                        @Override
+                        public void onSuccess() {
+                            Log.d("profpic", "changed");
+                        }
+                    });
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
         return binding.getRoot();
     }
 
@@ -75,6 +127,12 @@ public class JsProfileFragment extends Fragment {
 
         binding.skills.btnEditSection.setOnClickListener(v -> {
             startActivity(createSettingIntent("Skills", "skills"));
+        });
+
+        binding.profilePicture.setOnClickListener(v -> {
+            pickMedia.launch(new PickVisualMediaRequest.Builder()
+                    .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
+                    .build());
         });
     }
 

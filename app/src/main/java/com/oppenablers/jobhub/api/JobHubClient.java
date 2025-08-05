@@ -185,6 +185,25 @@ public class JobHubClient {
                 });
     }
 
+    public static void changeProfilePicture(byte[] imageBytes, JobHubCallbackVoid callback) {
+        CLIENT.newCall(startRequest("/change_profile_picture")
+                .post(RequestBody.create(
+                        imageBytes,
+                        MediaType.parse("application/octet-stream")))
+                .build())
+                .enqueue(new Callback() {
+                    @Override
+                    public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                        callback.onFailure();
+                    }
+
+                    @Override
+                    public void onResponse(@NonNull Call call, @NonNull Response response) {
+                        callback.onSuccess();
+                    }
+                });
+    }
+
     private static Request post(String endpoint, String body) {
         return startRequest(endpoint)
                 .post(RequestBody.create(body, MediaType.parse("application/json")))
